@@ -1,0 +1,184 @@
+---
+title: "RÃ©seaux_Confinement"
+author: "Julien Monnot"
+date: "25 avril 2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup}
+library(tidytext)
+library(tm)
+library(tidyverse)
+library(tidygraph)
+library(tidyr)
+library(tidyselect)
+library(dplyr)
+library(ggplot2)
+library(proustr)
+library(mixr)
+library(widyr)
+library(knitr)
+library(topicmodels)
+library(lubridate)
+library(graphlayouts)
+memory.limit()
+memory.limit(34000)
+
+
+df <- readRDS("D:/__Thèse/_Confinement/df_nrcliwclsd.rds")
+
+df$created_at <-  ceiling_date(df$created_at, unit = "day")
+
+#On crée une nouvelle colonne dans la base correspondant à la semaine de 2020 d'émission des Tweets
+df <- df %>%
+  arrange(created_at) %>%
+  mutate(DayN = day(created_at))
+
+#On redéfinit les valeurs obtenues en factor pour garder les valeurs accessibles facilement pour filtrage du corpus
+df$DayN <- as.factor(df$DayN)
+VecDate <- levels(df$DayN)
+VecDate
+
+lex_lm <- get_lexicon("fr")
+
+df_Tok <- df %>%
+  unnest_tokens(output = "Mots",
+                input = text,
+                token = "words",
+                collapse = F) %>%
+  anti_join(proust_stopwords(),by=c("Mots"="word"))
+
+df_Tok <- left_join(df_Tok,
+                    lex_lm,
+                    by=c("Mots"="word"))
+
+df_Tok_Fltr <- df_Tok %>%
+  select(user_id,Mots,lemma,type,DayN) %>%
+   filter(Mots != "confinement") %>%
+  filter(Mots != "jour") %>%
+   filter(type %in% c("nom","adj")) 
+
+df_Tok_Fltr1 <- df_Tok_Fltr %>%
+  filter(Mots != c("confinement","jour")) %>%
+  filter(lemma!= c("confinement","jour"))
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r Cooc1-17}
+for (i in 1:16) {
+  
+df_Day <- df_Tok_Fltr1 %>%
+  filter(DayN == i)
+
+cooc <- df_Day %>%
+  pairwise_count(lemma, feature = user_id,sort=T) 
+
+cooc2 <- cooc %>%
+  filter(n > 10)
+
+mots_graph <- igraph::graph_from_data_frame(cooc2)
+
+my_graph <- mots_graph %>%
+   ggraph::ggraph(layout = "fr") +
+   ggraph::geom_edge_link(edge_colour="steelblue") +
+   ggraph::geom_node_point(color = "khaki1", size = 5) +
+   ggraph::geom_node_text(aes(label = name), repel = TRUE) +
+   ggplot2::theme_void() + 
+   labs(title = paste("Jour",i))
+
+plot(my_graph)
+
+}
+
+```
+
+```{r Cooc7}
+
+df_Day <- df_Tok_Fltr1 %>%
+  filter(DayN == 16)
+
+cooc <- df_Day %>%
+  pairwise_count(lemma, feature = user_id,sort=T) 
+
+cooc2 <- cooc %>%
+  filter(n > 7)
+
+mots_graph <- igraph::graph_from_data_frame(cooc2)
+
+my_graph <- mots_graph %>%
+   ggraph::ggraph(layout = "fr") +
+   ggraph::geom_edge_link(edge_colour="steelblue") +
+   ggraph::geom_node_point(color = "khaki1", size = 5) +
+   ggraph::geom_node_text(aes(label = name), repel = TRUE) +
+   ggplot2::theme_void() + 
+   labs(title = paste("Jour",16))
+
+plot(my_graph)
+
+
+```
+
+
+
+```{r Cooc18}
+
+df_Day <- df_Tok_Fltr1 %>%
+  filter(DayN == 18)
+
+cooc <- df_Day %>%
+  pairwise_count(lemma, feature = user_id,sort=T) 
+
+cooc2 <- cooc %>%
+  filter(n > 2)
+
+mots_graph <- igraph::graph_from_data_frame(cooc2)
+
+my_graph <- mots_graph %>%
+   ggraph::ggraph(layout = "fr") +
+   ggraph::geom_edge_link(edge_colour="steelblue") +
+   ggraph::geom_node_point(color = "khaki1", size = 5) +
+   ggraph::geom_node_text(aes(label = name), repel = TRUE) +
+   ggplot2::theme_void() + 
+   labs(title = paste("Jour",18))
+
+plot(my_graph)
+
+
+
+```
+
+```{r Cooc17-31}
+for (i in 19:length(VecDate)) {
+  
+df_Day <- df_Tok_Fltr1 %>%
+  filter(DayN == i)
+
+cooc <- df_Day %>%
+  pairwise_count(lemma, feature = user_id,sort=T) 
+
+cooc2 <- cooc %>%
+  filter(n > 19)
+
+mots_graph <- igraph::graph_from_data_frame(cooc2)
+
+my_graph <- mots_graph %>%
+   ggraph::ggraph(layout = "fr") +
+   ggraph::geom_edge_link(edge_colour="steelblue") +
+   ggraph::geom_node_point(color = "khaki1", size = 5) +
+   ggraph::geom_node_text(aes(label = name), repel = TRUE) +
+   ggplot2::theme_void() + 
+   labs(title = paste("Jour",i))
+
+plot(my_graph)
+
+}
+
+```
